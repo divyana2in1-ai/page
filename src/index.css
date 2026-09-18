@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* PDF.js Selectable Text Layer Styling */
+.pdf-canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.pdf-text-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 1;
+  line-height: 1.0;
+  user-select: text;
+  -webkit-user-select: text;
+  pointer-events: auto;
+}
+
+.pdf-text-layer span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  pointer-events: all;
+}
+
+.pdf-text-layer span::selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: transparent;
+}
+
+.pdf-text-layer span::-moz-selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: transparent;
+}
+
+/* Print optimizations */
+@media print {
+  header, aside, nav, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

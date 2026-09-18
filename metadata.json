@@ -1,0 +1,6 @@
+{
+  "name": "Book Vocabulary & Annotation Generator",
+  "description": "PDF-based book vocabulary collector, AI contextual meaning generator, and compact printable label creator for physical book annotations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
