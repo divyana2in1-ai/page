@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
-import { Book as BookIcon, FileText, Printer, Library, Sparkles, HelpCircle, CheckCircle2, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Book as BookIcon,
+  HelpCircle,
+  CheckCircle2,
+  X,
+  Settings,
+  Printer,
+  ChevronLeft,
+} from 'lucide-react';
 import { Book } from '../types';
+import { getStoredGeminiKey } from '../utils/geminiSettings';
 
 interface NavbarProps {
   activeTab: 'books' | 'reader' | 'vocab' | 'print';
@@ -9,128 +18,114 @@ interface NavbarProps {
   currentBook: Book | null;
   onSelectBook: (book: Book) => void;
   pendingVocabCount: number;
+  totalVocabCount: number;
+  printedVocabCount: number;
+  onOpenSettings: () => void;
+  onOpenAllBooksPrint: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onTabChange,
-  books,
   currentBook,
-  onSelectBook,
-  pendingVocabCount
+  totalVocabCount,
+  printedVocabCount,
+  onOpenSettings,
+  onOpenAllBooksPrint,
 }) => {
   const [showHelp, setShowHelp] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  useEffect(() => {
+    const key = getStoredGeminiKey();
+    setHasApiKey(Boolean(key));
+  }, []);
 
   return (
     <>
-      <header className="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between text-slate-100 z-30 select-none">
-        {/* Brand & Title */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 font-bold text-base tracking-tight text-white">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/30">
-              <BookIcon className="w-4 h-4" />
+      {/* ── Top Header Bar (Desktop & Mobile) ─────────────────────────────── */}
+      <header className="h-14 bg-slate-900 border-b border-slate-800 px-3 sm:px-4 flex items-center justify-between text-slate-100 z-30 select-none shrink-0">
+        {/* Left: Brand & Title OR Back Button */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {activeTab !== 'books' ? (
+            <button
+              onClick={() => onTabChange('books')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition-colors shrink-0 shadow-sm"
+              title="Return to Books screen"
+            >
+              <ChevronLeft className="w-4 h-4 text-blue-400" />
+              <span>Books</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/30 shrink-0">
+                <BookIcon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-sm sm:text-base tracking-tight bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent truncate">
+                    Book Vocab
+                  </span>
+                  <span className="hidden lg:inline-block text-[11px] font-normal text-slate-400 border-l border-slate-700 pl-2">
+                    Physical Book Annotations
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">Book Vocab</span>
-              <span className="hidden sm:inline-block text-xs font-normal text-slate-400 ml-2 border-l border-slate-700 pl-2">
-                Physical Book Annotation Studio
+          )}
+
+          {/* Current Book Badge when inside Reader, Vocab, or Print */}
+          {activeTab !== 'books' && currentBook && (
+            <div className="flex items-center gap-1.5 min-w-0 max-w-[140px] sm:max-w-xs truncate text-xs text-slate-300 pl-1 border-l border-slate-800">
+              <span className="font-medium truncate text-white">
+                {currentBook.title}
               </span>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Center Tabs */}
-        <nav className="flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+        {/* Right Section: Print Status, Settings & Help */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Print Status Button (Shows all PDFs vocab status) */}
           <button
-            onClick={() => onTabChange('books')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              activeTab === 'books'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
+            onClick={onOpenAllBooksPrint}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors"
+            title="All PDFs Vocabulary & Print Status"
           >
-            <Library className="w-3.5 h-3.5" />
-            <span>Books</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('reader')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              activeTab === 'reader'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
-          >
-            <BookIcon className="w-3.5 h-3.5" />
-            <span>PDF Reader</span>
-          </button>
-
-          <button
-            onClick={() => onTabChange('vocab')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all relative ${
-              activeTab === 'vocab'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Vocabulary</span>
-            {pendingVocabCount > 0 && (
-              <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 ml-1">
-                {pendingVocabCount}
+            <Printer className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden sm:inline font-medium">Print Status</span>
+            {totalVocabCount > 0 && (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-blue-950 text-blue-300 border border-blue-800/80">
+                {printedVocabCount}/{totalVocabCount}
               </span>
             )}
           </button>
 
+          {/* Settings Button (Opens Gemini Key & Settings modal) */}
           <button
-            onClick={() => onTabChange('print')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              activeTab === 'print'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
+            onClick={onOpenSettings}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors relative"
+            title="App & Gemini API Settings"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Labels</span>
+            <Settings className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden sm:inline font-medium">Settings</span>
+            {hasApiKey ? (
+              <span
+                className="w-2 h-2 rounded-full bg-emerald-400"
+                title="Gemini Key Configured"
+              />
+            ) : (
+              <span
+                className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"
+                title="Add Gemini Key in Settings"
+              />
+            )}
           </button>
-        </nav>
-
-        {/* Right Info & Book Selector */}
-        <div className="flex items-center gap-3">
-          {/* Active Book selector if books exist */}
-          {books.length > 0 && (
-            <div className="hidden md:flex items-center gap-2">
-              <span className="text-[11px] text-slate-400">Current:</span>
-              <select
-                value={currentBook?.id || ''}
-                onChange={(e) => {
-                  const b = books.find((x) => x.id === e.target.value);
-                  if (b) onSelectBook(b);
-                }}
-                className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-md px-2 py-1 max-w-[160px] truncate focus:outline-none focus:border-blue-500"
-              >
-                {books.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* AI Thinking Status Badge */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-[11px] text-slate-300">
-            <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" />
-            <span>Gemini 3.1 Pro</span>
-            <span className="text-[9px] uppercase px-1 py-0.2 bg-indigo-500/20 text-indigo-300 font-semibold rounded border border-indigo-500/30">
-              High Thinking
-            </span>
-          </div>
 
           {/* Workflow Guide Button */}
           <button
             onClick={() => setShowHelp(true)}
-            className="p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
             title="How the Physical Book Workflow Works"
           >
             <HelpCircle className="w-4 h-4" />
@@ -138,71 +133,70 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </header>
 
+      {/* 
+        NOTE: The lower buttons (bottom navigation bar) of books, reader, vocab, print 
+        have been completely removed as requested: 
+        "On this first screen the lower buttons of books,reader, vocab, print should not be shown. 
+         Even they should not be shown anywhere,below any screen"
+      */}
+
       {/* Workflow Modal */}
       {showHelp && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full p-6 text-slate-200 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 sm:p-6 text-slate-200 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowHelp(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white p-1"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-white mb-2 flex items-center gap-2">
               <BookIcon className="w-5 h-5 text-blue-400" />
               Physical Book Annotation Workflow
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              This application is designed specifically for annotating physical books with tiny printed labels.
+              Designed specifically for annotating physical paper books with tiny printed label stickers.
             </p>
 
             <div className="space-y-3 text-xs">
-              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
                 <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center shrink-0">1</span>
                 <div>
                   <strong className="text-white block font-medium">Read Physical Book</strong>
-                  <p className="text-slate-400 mt-0.5">When you meet an unfamiliar word in your paper book, open that page in the PDF reader.</p>
+                  <p className="text-slate-400 mt-0.5">When reading your paper book, open the matching page in this reader on your laptop or phone.</p>
                 </div>
               </div>
 
-              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
                 <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center shrink-0">2</span>
                 <div>
-                  <strong className="text-white block font-medium">Double-click or Long-press the Word</strong>
-                  <p className="text-slate-400 mt-0.5">A small unobtrusive popup appears showing the word, book page, and context sentence. Tap "+ Save Word".</p>
+                  <strong className="text-white block font-medium">Select Unfamiliar Words</strong>
+                  <p className="text-slate-400 mt-0.5">Double-tap, highlight, or click the word. Tap &quot;+ Save Word&quot; to store it locally.</p>
                 </div>
               </div>
 
-              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
                 <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center shrink-0">3</span>
                 <div>
-                  <strong className="text-white block font-medium">Instant & Local</strong>
-                  <p className="text-slate-400 mt-0.5">Saving is instant and completely local. No AI calls interrupt your reading session.</p>
+                  <strong className="text-white block font-medium">Gemini AI Meanings (Batch)</strong>
+                  <p className="text-slate-400 mt-0.5">In the Vocabulary tab, click &quot;Generate Meanings (AI)&quot;. Gemini creates ultra-short, context-accurate definitions strictly under 65 characters.</p>
                 </div>
               </div>
 
-              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
                 <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center shrink-0">4</span>
                 <div>
-                  <strong className="text-white block font-medium">Generate AI Meanings (Batch)</strong>
-                  <p className="text-slate-400 mt-0.5">Later, in the Vocabulary tab, click "Generate Meanings". Gemini 3.1 Pro creates short, context-specific definitions under 60 chars.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 items-start bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
-                <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold flex items-center justify-center shrink-0">5</span>
-                <div>
                   <strong className="text-white block font-medium">Print, Cut & Paste into Book</strong>
-                  <p className="text-slate-400 mt-0.5">Go to the Print tab to generate compact sticker labels grouped by page. Print on standard or sticker paper, cut, and paste onto your physical pages!</p>
+                  <p className="text-slate-400 mt-0.5">Go to the Print tab to generate dynamic page blocks or individual labels. Print on paper or sticker sheets, cut, and paste into your physical book margin!</p>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setShowHelp(false)}
-              className="mt-5 w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              className="mt-5 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
             >
-              <CheckCircle2 className="w-4 h-4" /> Got it, let's read
+              <CheckCircle2 className="w-4 h-4" /> Got it, let&apos;s read
             </button>
           </div>
         </div>

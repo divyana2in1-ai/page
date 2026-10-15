@@ -16,14 +16,18 @@ import { BooksView } from './components/BooksView';
 import { PdfReader } from './components/PdfReader';
 import { VocabularyView } from './components/VocabularyView';
 import { PrintStudio } from './components/PrintStudio';
+import { SettingsModal } from './components/SettingsModal';
+import { AllBooksPrintModal } from './components/AllBooksPrintModal';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'books' | 'reader' | 'vocab' | 'print'>('reader');
+  const [activeTab, setActiveTab] = useState<'books' | 'reader' | 'vocab' | 'print'>('books');
   const [books, setBooks] = useState<Book[]>([]);
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [printSettings, setPrintSettings] = useState<PrintSettings>(DEFAULT_PRINT_SETTINGS);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isAllBooksPrintOpen, setIsAllBooksPrintOpen] = useState<boolean>(false);
 
   // ── 1. Initial Load ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -239,6 +243,8 @@ export default function App() {
   };
 
   const pendingCount = vocabulary.filter((v) => v.status === 'pending').length;
+  const printedCount = vocabulary.filter((v) => v.status === 'printed').length;
+  const totalCount = vocabulary.length;
 
   if (isInitializing) {
     return (
@@ -259,6 +265,10 @@ export default function App() {
         currentBook={currentBook}
         onSelectBook={handleSelectBook}
         pendingVocabCount={pendingCount}
+        totalVocabCount={totalCount}
+        printedVocabCount={printedCount}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenAllBooksPrint={() => setIsAllBooksPrintOpen(true)}
       />
 
       {/* Main View Area */}
@@ -266,11 +276,13 @@ export default function App() {
         {activeTab === 'books' && (
           <BooksView
             books={books}
+            currentBook={currentBook}
             vocabulary={vocabulary}
             onSelectBook={handleSelectBook}
             onAddBook={handleAddBook}
             onDeleteBook={handleDeleteBook}
             onNavigateToTab={setActiveTab}
+            onOpenAllBooksPrint={() => setIsAllBooksPrintOpen(true)}
           />
         )}
 
@@ -282,6 +294,8 @@ export default function App() {
               onSaveWord={handleSaveWord}
               onUpdateBookOffset={handleUpdateBookOffset}
               onNavigateToVocab={() => setActiveTab('vocab')}
+              onNavigateToPrint={() => setActiveTab('print')}
+              onNavigateToBooks={() => setActiveTab('books')}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
@@ -308,6 +322,7 @@ export default function App() {
             onBulkAddVocab={handleBulkAddVocab}
             onNavigateToTab={setActiveTab}
             onSelectBook={handleSelectBook}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
         )}
 
@@ -320,13 +335,28 @@ export default function App() {
             onUpdatePrintSettings={handleUpdatePrintSettings}
             onMarkAsPrinted={handleMarkAsPrinted}
             onNavigateToVocab={() => setActiveTab('vocab')}
-            onLoadDemoVocab={(items) => {
-              setVocabulary(items);
-              saveStoredVocabulary(items);
-            }}
+            onNavigateToBooks={() => setActiveTab('books')}
           />
         )}
       </main>
+
+      {/* App & Gemini Key Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* All Books Vocabulary & Print Status Modal */}
+      <AllBooksPrintModal
+        isOpen={isAllBooksPrintOpen}
+        onClose={() => setIsAllBooksPrintOpen(false)}
+        books={books}
+        vocabulary={vocabulary}
+        onSelectBookAndTab={(book, tab) => {
+          handleSelectBook(book);
+          setActiveTab(tab);
+        }}
+      />
     </div>
   );
 }

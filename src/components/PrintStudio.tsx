@@ -16,11 +16,12 @@ import {
   FileText,
   ZoomIn,
   ZoomOut,
-  Maximize2
+  Maximize2,
+  Eye,
+  ChevronLeft,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Book, VocabularyItem, PrintSettings, WordCasingStyle } from '../types';
-import { SCREENSHOT_DEMO_VOCABULARY } from '../sampleBook';
 
 interface PrintStudioProps {
   books: Book[];
@@ -30,7 +31,7 @@ interface PrintStudioProps {
   onUpdatePrintSettings: (settings: PrintSettings) => void;
   onMarkAsPrinted: (vocabIds: string[]) => void;
   onNavigateToVocab: () => void;
-  onLoadDemoVocab?: (items: VocabularyItem[]) => void;
+  onNavigateToBooks?: () => void;
 }
 
 const PAPER_DIMS_MM: Record<string, { w: number; h: number }> = {
@@ -79,15 +80,14 @@ export const PrintStudio: React.FC<PrintStudioProps> = ({
   onUpdatePrintSettings,
   onMarkAsPrinted,
   onNavigateToVocab,
-  onLoadDemoVocab,
+  onNavigateToBooks,
 }) => {
-  const [selectedBookId, setSelectedBookId] = useState<string>(
-    currentBook?.id || books[0]?.id || ''
-  );
+  const selectedBookId = currentBook?.id || books[0]?.id || '';
   const [filterPrinted, setFilterPrinted] = useState<'all' | 'unprinted'>('all');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [printSuccessMsg, setPrintSuccessMsg] = useState<string | null>(null);
   const [previewZoom, setPreviewZoom] = useState<number>(1.0); // 0.7 to 1.5
+  const [mobileTab, setMobileTab] = useState<'preview' | 'settings'>('preview');
 
   const activeBook = books.find((b) => b.id === selectedBookId) || currentBook || books[0];
 
@@ -568,10 +568,48 @@ export const PrintStudio: React.FC<PrintStudioProps> = ({
     : individualLabelsSheets.length;
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-950 text-slate-100 select-none">
+    <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-slate-950 text-slate-100 select-none pb-14 md:pb-0">
+      {/* Mobile Switcher between Settings & Live Preview */}
+      <div className="md:hidden bg-slate-900 border-b border-slate-800 p-2 flex gap-1.5 shrink-0 z-20">
+        <button
+          onClick={() => setMobileTab('preview')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+            mobileTab === 'preview'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-slate-800 text-slate-300'
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>Sheet Preview</span>
+        </button>
+        <button
+          onClick={() => setMobileTab('settings')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+            mobileTab === 'settings'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-slate-800 text-slate-300'
+          }`}
+        >
+          <Sliders className="w-3.5 h-3.5" />
+          <span>Layout Settings</span>
+        </button>
+      </div>
+
       {/* ── Left Settings & Configuration Panel ──────────────────────────── */}
-      <aside className="w-full md:w-88 bg-slate-900 border-r border-slate-800 p-4 md:p-5 overflow-y-auto shrink-0 space-y-4 text-xs">
+      <aside className={`w-full md:w-88 bg-slate-900 border-r border-slate-800 p-4 md:p-5 overflow-y-auto shrink-0 space-y-4 text-xs ${
+        mobileTab === 'settings' ? 'block' : 'hidden'
+      } md:block`}>
         <div>
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={onNavigateToBooks}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 text-blue-400" />
+              <span>Books</span>
+            </button>
+            <span className="text-[11px] text-slate-400 font-medium">Print Studio</span>
+          </div>
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Printer className="w-4 h-4 text-blue-400" />
@@ -630,21 +668,13 @@ export const PrintStudio: React.FC<PrintStudioProps> = ({
           </div>
         )}
 
-        {/* Book Selector & Summary */}
+        {/* PDF Document Summary (Locked to current PDF) */}
         <div className="bg-slate-800/60 border border-slate-700/60 p-3 rounded-xl space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-slate-400">Book:</span>
-            <select
-              value={selectedBookId}
-              onChange={(e) => setSelectedBookId(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-xs text-white rounded px-2 py-1 max-w-[170px] truncate"
-            >
-              {books.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.title}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-slate-400 shrink-0">PDF Document:</span>
+            <span className="text-xs font-bold text-white max-w-[190px] truncate bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+              {activeBook?.title || 'Selected Book'}
+            </span>
           </div>
 
           <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-700/40">
@@ -654,19 +684,7 @@ export const PrintStudio: React.FC<PrintStudioProps> = ({
             </span>
           </div>
 
-          {/* Quick Demo Preset */}
-          {onLoadDemoVocab && (
-            <div className="pt-1.5 flex justify-end">
-              <button
-                onClick={() => onLoadDemoVocab(SCREENSHOT_DEMO_VOCABULARY)}
-                title="Load the 18 sample words from Page 1 & 2 directly from the screenshot"
-                className="text-[10px] text-amber-400/90 hover:text-amber-300 underline flex items-center gap-1"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Load Sample Screenshot Blocks (18 words)</span>
-              </button>
-            </div>
-          )}
+
 
           {printableEntries.length === 0 && (
             <div className="text-[11px] text-amber-300/90 pt-1">
@@ -1068,7 +1086,9 @@ export const PrintStudio: React.FC<PrintStudioProps> = ({
       </aside>
 
       {/* ── Right Live Scale Preview Area ─────────────────────────────────── */}
-      <main className="flex-1 overflow-auto bg-slate-950/80 p-4 md:p-6 flex flex-col items-center">
+      <main className={`flex-1 overflow-auto bg-slate-950/80 p-3 sm:p-4 md:p-6 flex-col items-center ${
+        mobileTab === 'preview' ? 'flex' : 'hidden'
+      } md:flex`}>
         {/* Preview Status & Zoom Bar */}
         <div className="w-full max-w-4xl flex items-center justify-between mb-4 text-xs text-slate-400">
           <div className="flex items-center gap-2">
@@ -1132,23 +1152,14 @@ export const PrintStudio: React.FC<PrintStudioProps> = ({
             <p className="text-xs text-slate-400 mb-4">
               To print physical annotation blocks, collect words in the PDF Reader and generate short meanings in the Vocabulary dashboard.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+            <div className="flex items-center justify-center">
               <button
                 onClick={onNavigateToVocab}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Go to Vocabulary Dashboard</span>
               </button>
-              {onLoadDemoVocab && (
-                <button
-                  onClick={() => onLoadDemoVocab(SCREENSHOT_DEMO_VOCABULARY)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Load Sample Blocks</span>
-                </button>
-              )}
             </div>
           </div>
         )}
